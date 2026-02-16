@@ -4,8 +4,8 @@ const HEIGHT = 900;
 
 // Interaction
 const SCALE_STEP = 0.02;
-const MIN_SCALE = 1.0;
-const MAX_SCALE = 1.45;
+const MIN_SCALE = 0.8;
+const MAX_SCALE = 2.0;
 
 // Geometry styling
 const EDGE_SMOOTHING_PASSES = 2;
@@ -35,7 +35,7 @@ const SAT_JITTER = 5;
 const LIGHTNESS_JITTER = 5;
 
 const LAYERS = [
-  { name: "single", count: 95, relax: 2, jitter: 8.2, clusterMin: 4, clusterMax: 12, accentRatio: 0.06 },
+  { name: "single", count: 1000, relax: 2, jitter: 8.2, clusterMin: 4, clusterMax: 12, accentRatio: 0.06 },
 ];
 
 const PALETTE = {
@@ -68,7 +68,7 @@ const PALETTE = {
 
 // Runtime state
 let useRelaxation = true;
-let cellScale = 1.08;
+let cellScale = 1.65;
 let composition = [];
 let focalPoints = [];
 

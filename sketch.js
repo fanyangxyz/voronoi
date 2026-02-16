@@ -1,6 +1,6 @@
 // Canvas
-const WIDTH = 900;
-const HEIGHT = 900;
+const WIDTH = 1000;
+const HEIGHT = 1000;
 
 // Interaction
 const SCALE_STEP = 0.02;
@@ -10,7 +10,7 @@ const MAX_SCALE = 2.0;
 // Geometry styling
 const EDGE_SMOOTHING_PASSES = 2;
 const MIN_CELL_AREA = 9;
-const PATCH_ALPHA = 0.75;
+const PATCH_ALPHA = 0.02;
 
 // Point sampling distribution
 const BASE_DENSITY = 0.18;
@@ -36,7 +36,7 @@ const SAT_JITTER = 5;
 const LIGHTNESS_JITTER = 5;
 
 const LAYERS = [
-  { name: "single", count: 1000, relax: 2, jitter: 8.2, clusterMin: 4, clusterMax: 12, accentRatio: 0.06 },
+  { name: "single", count: 50000, relax: 2, jitter: 8.2, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
 ];
 
 const PALETTE = {
@@ -69,7 +69,7 @@ const PALETTE = {
 
 // Runtime state
 let useRelaxation = true;
-let cellScale = 2.65;
+let cellScale = 30;
 let composition = [];
 let focalPoints = [];
 

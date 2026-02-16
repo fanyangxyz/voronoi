@@ -10,6 +10,7 @@ const MAX_SCALE = 2.0;
 // Geometry styling
 const EDGE_SMOOTHING_PASSES = 2;
 const MIN_CELL_AREA = 9;
+const PATCH_ALPHA = 0.75;
 
 // Point sampling distribution
 const BASE_DENSITY = 0.18;
@@ -68,7 +69,7 @@ const PALETTE = {
 
 // Runtime state
 let useRelaxation = true;
-let cellScale = 1.65;
+let cellScale = 2.65;
 let composition = [];
 let focalPoints = [];
 
@@ -157,7 +158,7 @@ function generateComposition() {
 // Draw a single paint patch with scale inflation and edge smoothing.
 function drawPatch(patch) {
   const scaled = patch.vertices.map((v) => scaleAround(v, patch.center, cellScale));
-  fill(patch.color.h, patch.color.s, patch.color.l, 1);
+  fill(patch.color.h, patch.color.s, patch.color.l, PATCH_ALPHA);
   noStroke();
   const smooth = smoothClosedPolygon(scaled, EDGE_SMOOTHING_PASSES);
   drawSoftPolygon(smooth);

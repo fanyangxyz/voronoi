@@ -72,6 +72,7 @@ let cellScale = 1.08;
 let composition = [];
 let focalPoints = [];
 
+// Initialize canvas and generate the first composition.
 function setup() {
   const cnv = createCanvas(WIDTH, HEIGHT);
   cnv.parent(document.querySelector("main"));
@@ -79,6 +80,7 @@ function setup() {
   generateComposition();
 }
 
+// Handle keyboard controls for regenerate, relax toggle, and scale tuning.
 function keyPressed() {
   if (key === "r" || key === "R") {
     generateComposition();
@@ -96,6 +98,7 @@ function keyPressed() {
   }
 }
 
+// Render the full scene: patches, grain texture, and HUD frame.
 function draw() {
   background(17, 22, 31);
 
@@ -109,8 +112,10 @@ function draw() {
   drawFrame();
 }
 
+// Build one full painterly composition from sampled Voronoi cells.
 function generateComposition() {
   composition = [];
+  // Focal points bias site density so the piece has clustered visual interest.
   focalPoints = makeFocalPoints();
 
   for (let layerIndex = 0; layerIndex < LAYERS.length; layerIndex += 1) {
@@ -118,6 +123,7 @@ function generateComposition() {
     let points = sampleWeightedPoints(layer.count, width, height, focalPoints);
 
     if (useRelaxation) {
+      // Partial Lloyd relaxation: keeps irregularity while avoiding noisy clumps.
       for (let i = 0; i < layer.relax; i += 1) {
         const tess = buildVoronoi(points);
         points = lloydRelax(points, tess.voronoi);
@@ -127,6 +133,7 @@ function generateComposition() {
     const tess = buildVoronoi(points);
     const cells = extractCells(tess.voronoi, points);
     const neighbors = buildAdjacency(tess.delaunay, cells);
+    // Neighbor-aware clustering assigns shared colors to adjacent cells.
     assignMergedColors(cells, neighbors, layer);
 
     for (const cell of cells) {
@@ -147,6 +154,7 @@ function generateComposition() {
   });
 }
 
+// Draw a single paint patch with scale inflation and edge smoothing.
 function drawPatch(patch) {
   const scaled = patch.vertices.map((v) => scaleAround(v, patch.center, cellScale));
   fill(patch.color.h, patch.color.s, patch.color.l, 1);
@@ -155,6 +163,7 @@ function drawPatch(patch) {
   drawSoftPolygon(smooth);
 }
 
+// Draw a closed polygon with curve vertices for softer contour rendering.
 function drawSoftPolygon(verts) {
   if (!verts || verts.length < 3) return;
   const extended = [verts[verts.length - 1], ...verts, verts[0], verts[1]];
@@ -165,6 +174,7 @@ function drawSoftPolygon(verts) {
   endShape(CLOSE);
 }
 
+// Apply Chaikin corner-cutting to smooth a closed polygon.
 function smoothClosedPolygon(verts, passes) {
   let current = verts.slice();
   for (let p = 0; p < passes; p += 1) {
@@ -186,6 +196,7 @@ function smoothClosedPolygon(verts, passes) {
   return current;
 }
 
+// Create random Gaussian-like focal regions for weighted point sampling.
 function makeFocalPoints() {
   const n = floor(random(FOCUS_COUNT_MIN, FOCUS_COUNT_MAX_EXCLUSIVE));
   const foci = [];
@@ -200,12 +211,14 @@ function makeFocalPoints() {
   return foci;
 }
 
+// Rejection-sample points using focal-density weighting.
 function sampleWeightedPoints(count, w, h, foci) {
   const points = [];
   while (points.length < count) {
     const x = random(w);
     const y = random(h);
 
+    // Start from a baseline acceptance probability and add focus influence.
     let density = BASE_DENSITY;
     for (const f of foci) {
       const dx = x - f.x;
@@ -222,12 +235,14 @@ function sampleWeightedPoints(count, w, h, foci) {
   return points;
 }
 
+// Build Delaunay triangulation and Voronoi diagram from point sites.
 function buildVoronoi(points) {
   const coords = points.map((p) => [p.x, p.y]);
   const delaunay = d3.Delaunay.from(coords);
   return { delaunay, voronoi: delaunay.voronoi([0, 0, width, height]) };
 }
 
+// Move each site to its Voronoi cell centroid (one Lloyd iteration).
 function lloydRelax(points, voronoi) {
   const out = [];
   for (let i = 0; i < points.length; i += 1) {
@@ -251,6 +266,7 @@ function lloydRelax(points, voronoi) {
   return out;
 }
 
+// Convert Voronoi cells into renderable polygon records.
 function extractCells(voronoi, points) {
   const cells = [];
   for (let i = 0; i < points.length; i += 1) {
@@ -276,6 +292,7 @@ function extractCells(voronoi, points) {
   return cells;
 }
 
+// Build cell-neighbor graph using Delaunay connectivity.
 function buildAdjacency(delaunay, cells) {
   const byIndex = new Map();
   for (let i = 0; i < cells.length; i += 1) {
@@ -293,8 +310,10 @@ function buildAdjacency(delaunay, cells) {
   return neighbors;
 }
 
+// Assign tones, then grow local color clusters across neighboring cells.
 function assignMergedColors(cells, neighbors, layer) {
   for (const cell of cells) {
+    // Noise-driven tone map establishes broad value structure.
     const n = noise(cell.center.x * 0.005, cell.center.y * 0.005);
     if (n > LIGHT_TONE_THRESHOLD) cell.tone = "light";
     else if (n < DARK_TONE_THRESHOLD) cell.tone = "dark";
@@ -312,6 +331,7 @@ function assignMergedColors(cells, neighbors, layer) {
     const baseTone = cells[start].tone;
     const base = pickColor(baseTone);
 
+    // BFS-like growth makes contiguous regions share the same color.
     const queue = [start];
     let painted = 0;
 
@@ -333,6 +353,7 @@ function assignMergedColors(cells, neighbors, layer) {
   }
 }
 
+// Restrict cluster growth to compatible tone families.
 function toneCompatible(a, b) {
   if (a === b) return true;
   if ((a === "light" && b === "mid") || (a === "mid" && b === "light")) return true;
@@ -340,6 +361,7 @@ function toneCompatible(a, b) {
   return false;
 }
 
+// Pick a palette color for a tone, then add slight jitter for variation.
 function pickColor(tone) {
   const list = PALETTE[tone] || PALETTE.mid;
   const [h, s, l] = random(list);
@@ -350,6 +372,7 @@ function pickColor(tone) {
   };
 }
 
+// Distort polygon vertices with radial + tangential noise for painterly edges.
 function jitterVertices(verts, center, amount) {
   return verts.map((v) => {
     const dx = v.x - center.x;
@@ -369,6 +392,7 @@ function jitterVertices(verts, center, amount) {
   });
 }
 
+// Compute centroid of a closed polygon (shoelace-based).
 function polygonCentroid(poly) {
   let twiceArea = 0;
   let cx = 0;
@@ -387,6 +411,7 @@ function polygonCentroid(poly) {
   return { x: cx / (3 * twiceArea), y: cy / (3 * twiceArea) };
 }
 
+// Compute signed polygon area (positive or negative by winding).
 function polygonArea(verts) {
   let area = 0;
   for (let i = 0; i < verts.length; i += 1) {
@@ -397,6 +422,7 @@ function polygonArea(verts) {
   return area * 0.5;
 }
 
+// Uniformly scale a point around an origin.
 function scaleAround(p, origin, scale) {
   return {
     x: origin.x + (p.x - origin.x) * scale,
@@ -404,6 +430,7 @@ function scaleAround(p, origin, scale) {
   };
 }
 
+// Pick one random element from a Set.
 function pickFromSet(setObj) {
   const idx = floor(random(setObj.size));
   let i = 0;
@@ -414,6 +441,7 @@ function pickFromSet(setObj) {
   return 0;
 }
 
+// In-place Fisher-Yates array shuffle.
 function shuffleArray(arr) {
   for (let i = arr.length - 1; i > 0; i -= 1) {
     const j = floor(random(i + 1));
@@ -424,6 +452,7 @@ function shuffleArray(arr) {
   return arr;
 }
 
+// Overlay subtle bright/dark grain for canvas-like texture.
 function drawGrain() {
   noStroke();
   for (let i = 0; i < 9000; i += 1) {
@@ -443,6 +472,7 @@ function drawGrain() {
   }
 }
 
+// Draw border and controls/status text.
 function drawFrame() {
   noFill();
   stroke(255, 255, 255, 20);

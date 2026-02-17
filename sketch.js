@@ -20,7 +20,7 @@ const SAT_JITTER = 5;
 const LIGHTNESS_JITTER = 5;
 
 const LAYERS = [
-  {count: 50000, relax: 2, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
+  { count: 50000, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
 ];
 
 const PALETTE = {
@@ -52,7 +52,6 @@ const PALETTE = {
 };
 
 // Runtime state
-let useRelaxation = true;
 let cellScale = 30;
 let composition = [];
 
@@ -64,13 +63,9 @@ function setup() {
   generateComposition();
 }
 
-// Handle keyboard controls for regenerate, relax toggle, and scale tuning.
+// Handle keyboard controls for regenerate and scale tuning.
 function keyPressed() {
   if (key === "r" || key === "R") {
-    generateComposition();
-    redraw();
-  } else if (key === "l" || key === "L") {
-    useRelaxation = !useRelaxation;
     generateComposition();
     redraw();
   } else if (key === "[" || key === "{") {
@@ -101,15 +96,7 @@ function generateComposition() {
   composition = [];
   for (let layerIndex = 0; layerIndex < LAYERS.length; layerIndex += 1) {
     const layer = LAYERS[layerIndex];
-    let points = sampleRandomPoints(layer.count, width, height);
-
-    if (useRelaxation) {
-      // Partial Lloyd relaxation: keeps irregularity while avoiding noisy clumps.
-      for (let i = 0; i < layer.relax; i += 1) {
-        const tess = buildVoronoi(points);
-        points = lloydRelax(points, tess.voronoi);
-      }
-    }
+    const points = sampleRandomPoints(layer.count, width, height);
 
     const tess = buildVoronoi(points);
     const cells = extractCells(tess.voronoi, points);
@@ -166,30 +153,6 @@ function buildVoronoi(points) {
   const coords = points.map((p) => [p.x, p.y]);
   const delaunay = d3.Delaunay.from(coords);
   return { delaunay, voronoi: delaunay.voronoi([0, 0, width, height]) };
-}
-
-// Move each site to its Voronoi cell centroid (one Lloyd iteration).
-function lloydRelax(points, voronoi) {
-  const out = [];
-  for (let i = 0; i < points.length; i += 1) {
-    const poly = voronoi.cellPolygon(i);
-    if (!poly || poly.length < 4) {
-      out.push({ ...points[i] });
-      continue;
-    }
-
-    const center = polygonCentroid(poly);
-    if (!center) {
-      out.push({ ...points[i] });
-      continue;
-    }
-
-    out.push({
-      x: constrain(center.x, 0, width),
-      y: constrain(center.y, 0, height),
-    });
-  }
-  return out;
 }
 
 // Convert Voronoi cells into renderable polygon records.
@@ -389,6 +352,5 @@ function drawFrame() {
   fill(255, 220);
   textSize(14);
   textAlign(LEFT, TOP);
-  const mode = useRelaxation ? "ON" : "OFF";
-  text(`Painterly Voronoi | Relaxation: ${mode} (L) | Scale: ${cellScale.toFixed(2)} ([ / ]) | R regenerate`, 18, 16);
+  text(`Painterly Voronoi | Scale: ${cellScale.toFixed(2)} ([ / ]) | R regenerate`, 18, 16);
 }

@@ -51,30 +51,36 @@ const PALETTE = {
 // Runtime state
 let cellScale = 30;
 let composition = [];
+let controlsEl = null;
 
 // Initialize canvas and generate the first composition.
 function setup() {
   const cnv = createCanvas(WIDTH, HEIGHT);
-  cnv.parent(document.querySelector("main"));
+  cnv.parent(document.querySelector("#canvas-root"));
+  controlsEl = document.querySelector("#controls");
   noLoop();
   generateComposition();
+  updateControlsText();
 }
 
 // Handle keyboard controls for regenerate and scale tuning.
 function keyPressed() {
   if (key === "r" || key === "R") {
     generateComposition();
+    updateControlsText();
     redraw();
   } else if (key === "[" || key === "{") {
     cellScale = max(MIN_SCALE, cellScale - SCALE_STEP);
+    updateControlsText();
     redraw();
   } else if (key === "]" || key === "}") {
     cellScale = min(MAX_SCALE, cellScale + SCALE_STEP);
+    updateControlsText();
     redraw();
   }
 }
 
-// Render the full scene: patches, grain texture, and HUD frame.
+// Render the full scene.
 function draw() {
   background(17, 22, 31);
 
@@ -83,9 +89,6 @@ function draw() {
     drawPatch(patch);
   }
   colorMode(RGB, 255, 255, 255, 255);
-
-  drawGrain();
-  drawFrame();
 }
 
 // Build one full painterly composition from sampled Voronoi cells.
@@ -310,36 +313,8 @@ function shuffleArray(arr) {
   return arr;
 }
 
-// Overlay subtle bright/dark grain for canvas-like texture.
-function drawGrain() {
-  noStroke();
-  for (let i = 0; i < 9000; i += 1) {
-    const x = random(width);
-    const y = random(height);
-    const a = random(10, 24);
-    fill(255, 255, 255, a);
-    rect(x, y, 1, 1);
-  }
-
-  for (let i = 0; i < 6500; i += 1) {
-    const x = random(width);
-    const y = random(height);
-    const a = random(8, 18);
-    fill(0, 0, 0, a);
-    rect(x, y, 1, 1);
-  }
-}
-
-// Draw border and controls/status text.
-function drawFrame() {
-  noFill();
-  stroke(255, 255, 255, 20);
-  strokeWeight(2);
-  rect(9, 9, width - 18, height - 18);
-
-  noStroke();
-  fill(255, 220);
-  textSize(14);
-  textAlign(LEFT, TOP);
-  text(`Painterly Voronoi | Scale: ${cellScale.toFixed(2)} ([ / ]) | R regenerate`, 18, 16);
+// Render control/status text into DOM so saved canvas images stay clean.
+function updateControlsText() {
+  if (!controlsEl) return;
+  controlsEl.textContent = `Painterly Voronoi | Scale: ${cellScale.toFixed(2)} ([ / ]) | R regenerate`;
 }

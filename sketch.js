@@ -8,7 +8,6 @@ const MIN_SCALE = 0.8;
 const MAX_SCALE = 2.0;
 
 // Geometry styling
-const EDGE_SMOOTHING_PASSES = 2;
 const MIN_CELL_AREA = 9;
 const PATCH_ALPHA = 0.02;
 
@@ -36,7 +35,7 @@ const SAT_JITTER = 5;
 const LIGHTNESS_JITTER = 5;
 
 const LAYERS = [
-  { name: "single", count: 50000, relax: 2, jitter: 8.2, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
+  { name: "single", count: 50000, relax: 2, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
 ];
 
 const PALETTE = {
@@ -138,12 +137,11 @@ function generateComposition() {
     assignMergedColors(cells, neighbors, layer);
 
     for (const cell of cells) {
-      const jittered = jitterVertices(cell.vertices, cell.center, layer.jitter);
       composition.push({
         layerIndex,
         color: cell.color,
         center: cell.center,
-        vertices: jittered,
+        vertices: cell.vertices,
         area: cell.area,
       });
     }
@@ -155,46 +153,22 @@ function generateComposition() {
   });
 }
 
-// Draw a single paint patch with scale inflation and edge smoothing.
+// Draw a single paint patch with scale inflation.
 function drawPatch(patch) {
   const scaled = patch.vertices.map((v) => scaleAround(v, patch.center, cellScale));
   fill(patch.color.h, patch.color.s, patch.color.l, PATCH_ALPHA);
   noStroke();
-  const smooth = smoothClosedPolygon(scaled, EDGE_SMOOTHING_PASSES);
-  drawSoftPolygon(smooth);
+  drawPolygon(scaled);
 }
 
-// Draw a closed polygon with curve vertices for softer contour rendering.
-function drawSoftPolygon(verts) {
+// Draw a closed polygon.
+function drawPolygon(verts) {
   if (!verts || verts.length < 3) return;
-  const extended = [verts[verts.length - 1], ...verts, verts[0], verts[1]];
   beginShape();
-  for (const v of extended) {
-    curveVertex(v.x, v.y);
+  for (const v of verts) {
+    vertex(v.x, v.y);
   }
   endShape(CLOSE);
-}
-
-// Apply Chaikin corner-cutting to smooth a closed polygon.
-function smoothClosedPolygon(verts, passes) {
-  let current = verts.slice();
-  for (let p = 0; p < passes; p += 1) {
-    const next = [];
-    for (let i = 0; i < current.length; i += 1) {
-      const a = current[i];
-      const b = current[(i + 1) % current.length];
-      next.push({
-        x: a.x * 0.75 + b.x * 0.25,
-        y: a.y * 0.75 + b.y * 0.25,
-      });
-      next.push({
-        x: a.x * 0.25 + b.x * 0.75,
-        y: a.y * 0.25 + b.y * 0.75,
-      });
-    }
-    current = next;
-  }
-  return current;
 }
 
 // Create random Gaussian-like focal regions for weighted point sampling.
@@ -371,26 +345,6 @@ function pickColor(tone) {
     s: constrain(s + random(-SAT_JITTER, SAT_JITTER), 0, 100),
     l: constrain(l + random(-LIGHTNESS_JITTER, LIGHTNESS_JITTER), 0, 100),
   };
-}
-
-// Distort polygon vertices with radial + tangential noise for painterly edges.
-function jitterVertices(verts, center, amount) {
-  return verts.map((v) => {
-    const dx = v.x - center.x;
-    const dy = v.y - center.y;
-    const len = max(sqrt(dx * dx + dy * dy), 0.0001);
-    const nx = dx / len;
-    const ny = dy / len;
-
-    const t = noise(v.x * 0.01, v.y * 0.01, center.x * 0.007 + center.y * 0.007);
-    const radial = (t * 2 - 1) * amount;
-    const tangent = (noise(v.y * 0.01, v.x * 0.01, center.y * 0.009) * 2 - 1) * amount * 0.28;
-
-    return {
-      x: v.x + nx * radial - ny * tangent,
-      y: v.y + ny * radial + nx * tangent,
-    };
-  });
 }
 
 // Compute centroid of a closed polygon (shoelace-based).

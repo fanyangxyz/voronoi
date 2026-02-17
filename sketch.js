@@ -18,9 +18,7 @@ const HUE_JITTER = 4;
 const SAT_JITTER = 5;
 const LIGHTNESS_JITTER = 5;
 
-const LAYERS = [
-  { count: 50000, clusterMin: 100, clusterMax: 240 },
-];
+const LAYER = { count: 50000, clusterMin: 100, clusterMax: 240 };
 
 const PALETTE = {
   light: [
@@ -93,31 +91,24 @@ function draw() {
 // Build one full painterly composition from sampled Voronoi cells.
 function generateComposition() {
   composition = [];
-  for (let layerIndex = 0; layerIndex < LAYERS.length; layerIndex += 1) {
-    const layer = LAYERS[layerIndex];
-    const points = sampleRandomPoints(layer.count, width, height);
+  const points = sampleRandomPoints(LAYER.count, width, height);
 
-    const tess = buildVoronoi(points);
-    const cells = extractCells(tess.voronoi, points);
-    const neighbors = buildAdjacency(tess.delaunay, cells);
-    // Neighbor-aware clustering assigns shared colors to adjacent cells.
-    assignMergedColors(cells, neighbors, layer);
+  const tess = buildVoronoi(points);
+  const cells = extractCells(tess.voronoi, points);
+  const neighbors = buildAdjacency(tess.delaunay, cells);
+  // Neighbor-aware clustering assigns shared colors to adjacent cells.
+  assignMergedColors(cells, neighbors, LAYER);
 
-    for (const cell of cells) {
-      composition.push({
-        layerIndex,
-        color: cell.color,
-        center: cell.center,
-        vertices: cell.vertices,
-        area: cell.area,
-      });
-    }
+  for (const cell of cells) {
+    composition.push({
+      color: cell.color,
+      center: cell.center,
+      vertices: cell.vertices,
+      area: cell.area,
+    });
   }
 
-  composition.sort((a, b) => {
-    if (a.layerIndex !== b.layerIndex) return a.layerIndex - b.layerIndex;
-    return b.area - a.area;
-  });
+  composition.sort((a, b) => b.area - a.area);
 }
 
 // Draw a single paint patch with scale inflation.

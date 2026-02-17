@@ -14,13 +14,12 @@ const PATCH_ALPHA = 0.02;
 // Color clustering
 const LIGHT_TONE_THRESHOLD = 0.72;
 const DARK_TONE_THRESHOLD = 0.26;
-const CLUSTER_GROW_PROBABILITY = 0.76;
 const HUE_JITTER = 4;
 const SAT_JITTER = 5;
 const LIGHTNESS_JITTER = 5;
 
 const LAYERS = [
-  { count: 50000, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
+  { count: 50000, clusterMin: 100, clusterMax: 240 },
 ];
 
 const PALETTE = {
@@ -208,7 +207,6 @@ function assignMergedColors(cells, neighbors, layer) {
     else if (n < DARK_TONE_THRESHOLD) cell.tone = "dark";
     else cell.tone = "mid";
 
-    if (random() < layer.accentRatio) cell.tone = "accent";
   }
 
   const unassigned = new Set();
@@ -236,7 +234,7 @@ function assignMergedColors(cells, neighbors, layer) {
       for (const nb of shuffled) {
         if (!unassigned.has(nb)) continue;
         if (!toneCompatible(baseTone, cells[nb].tone)) continue;
-        if (random() < CLUSTER_GROW_PROBABILITY) queue.push(nb);
+        queue.push(nb);
       }
     }
   }

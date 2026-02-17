@@ -11,21 +11,6 @@ const MAX_SCALE = 2.0;
 const MIN_CELL_AREA = 9;
 const PATCH_ALPHA = 0.02;
 
-// Point sampling distribution
-const BASE_DENSITY = 0.18;
-const MIN_DENSITY = 0.15;
-const MAX_DENSITY = 0.98;
-const FOCUS_COUNT_MIN = 3;
-const FOCUS_COUNT_MAX_EXCLUSIVE = 6;
-const FOCUS_X_MIN = 0.1;
-const FOCUS_X_MAX = 0.9;
-const FOCUS_Y_MIN = 0.1;
-const FOCUS_Y_MAX = 0.9;
-const FOCUS_SIGMA_MIN = 0.12;
-const FOCUS_SIGMA_MAX = 0.24;
-const FOCUS_STRENGTH_MIN = 0.45;
-const FOCUS_STRENGTH_MAX = 1.1;
-
 // Color clustering
 const LIGHT_TONE_THRESHOLD = 0.72;
 const DARK_TONE_THRESHOLD = 0.26;
@@ -35,7 +20,7 @@ const SAT_JITTER = 5;
 const LIGHTNESS_JITTER = 5;
 
 const LAYERS = [
-  { name: "single", count: 50000, relax: 2, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
+  {count: 50000, relax: 2, clusterMin: 100, clusterMax: 240, accentRatio: 0.06 },
 ];
 
 const PALETTE = {
@@ -70,7 +55,6 @@ const PALETTE = {
 let useRelaxation = true;
 let cellScale = 30;
 let composition = [];
-let focalPoints = [];
 
 // Initialize canvas and generate the first composition.
 function setup() {
@@ -115,12 +99,9 @@ function draw() {
 // Build one full painterly composition from sampled Voronoi cells.
 function generateComposition() {
   composition = [];
-  // Focal points bias site density so the piece has clustered visual interest.
-  focalPoints = makeFocalPoints();
-
   for (let layerIndex = 0; layerIndex < LAYERS.length; layerIndex += 1) {
     const layer = LAYERS[layerIndex];
-    let points = sampleWeightedPoints(layer.count, width, height, focalPoints);
+    let points = sampleRandomPoints(layer.count, width, height);
 
     if (useRelaxation) {
       // Partial Lloyd relaxation: keeps irregularity while avoiding noisy clumps.
@@ -171,41 +152,11 @@ function drawPolygon(verts) {
   endShape(CLOSE);
 }
 
-// Create random Gaussian-like focal regions for weighted point sampling.
-function makeFocalPoints() {
-  const n = floor(random(FOCUS_COUNT_MIN, FOCUS_COUNT_MAX_EXCLUSIVE));
-  const foci = [];
-  for (let i = 0; i < n; i += 1) {
-    foci.push({
-      x: random(width * FOCUS_X_MIN, width * FOCUS_X_MAX),
-      y: random(height * FOCUS_Y_MIN, height * FOCUS_Y_MAX),
-      sigma: random(width * FOCUS_SIGMA_MIN, width * FOCUS_SIGMA_MAX),
-      strength: random(FOCUS_STRENGTH_MIN, FOCUS_STRENGTH_MAX),
-    });
-  }
-  return foci;
-}
-
-// Rejection-sample points using focal-density weighting.
-function sampleWeightedPoints(count, w, h, foci) {
+// Uniformly sample random points across the canvas.
+function sampleRandomPoints(count, w, h) {
   const points = [];
-  while (points.length < count) {
-    const x = random(w);
-    const y = random(h);
-
-    // Start from a baseline acceptance probability and add focus influence.
-    let density = BASE_DENSITY;
-    for (const f of foci) {
-      const dx = x - f.x;
-      const dy = y - f.y;
-      const influence = exp(-(dx * dx + dy * dy) / (2 * f.sigma * f.sigma));
-      density += influence * f.strength;
-    }
-
-    density = constrain(density, MIN_DENSITY, MAX_DENSITY);
-    if (random() < density) {
-      points.push({ x, y });
-    }
+  for (let i = 0; i < count; i += 1) {
+    points.push({ x: random(w), y: random(h) });
   }
   return points;
 }

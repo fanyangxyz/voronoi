@@ -3,9 +3,9 @@ const WIDTH = 1000;
 const HEIGHT = 1000;
 
 // Interaction
-const SCALE_STEP = 0.02;
-const MIN_SCALE = 0.8;
-const MAX_SCALE = 2.0;
+const SCALE_STEP = 1;
+const MIN_SCALE = 0;
+const MAX_SCALE = 40;
 
 // Geometry styling
 const MIN_CELL_AREA = 9;
